@@ -1,4 +1,4 @@
-from flask import request, jsonify, current_app
+from flask import request, jsonify, Response, current_app
 from omnimatsoo.handlers import collect_blueprint
 from omnimatsoo.entities import PlaybackStatistics
 from omnimatsoo.services import ServiceClients as SVC
@@ -11,9 +11,10 @@ def _():
     try:
         SVC.playback_benchmark.add(PlaybackStatistics(**result))
     except Exception as ex:
-        current_app.logger.error(f"Unable to parse received payload: {ex}")
-        raise
-
+        current_app.logger.error(f"Unable to process received payload: {ex}")
+        return Response(
+            response="bad payload", status=400, content_type="application/json"
+        )
     return jsonify("")
 
 

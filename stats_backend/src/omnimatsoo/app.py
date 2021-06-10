@@ -1,5 +1,5 @@
 import logging
-from flask import Flask, g
+from flask import Flask
 from omnimatsoo.handlers import collect_blueprint
 from omnimatsoo.kvstorage import SUPPORTED, Client
 from omnimatsoo.services import ServiceClients

@@ -37,9 +37,7 @@ class Client:
     @classmethod
     def init(cls, type: SUPPORTED, **kwargs):
         if not cls.__instance or cls.__instance.TYPE != type:
-
             cls.__instance = {SUPPORTED.MEMORY: MemoryBackend}[type](**kwargs)
-        print(cls.__instance)
 
     @classmethod
     def get(cls):

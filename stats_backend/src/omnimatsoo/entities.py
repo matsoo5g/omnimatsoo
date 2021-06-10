@@ -12,15 +12,26 @@ class DomEvent:
 
 
 @dataclass
+class PlaybackQualitySample:
+    # https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality
+    samples: int
+    creationTimes: list[float]
+    droppedVideoFrames: list[int]
+    totalVideoFrames: list[int]
+
+
+@dataclass
 class PlaybackStatistics:
     id: str
     timestamp: int
     target: str
     events: list[DomEvent]
+    playbackquality: PlaybackQualitySample
 
     def __post_init__(self):
-        for i in range(len(self.events)):
-            self.events[i] = DomEvent.from_tuple(self.events[i])
+        self.playbackquality = PlaybackQualitySample(**self.playbackquality)
+        for i, e in enumerate(self.events):
+            self.events[i] = DomEvent.from_tuple(e)
 
 
 @dataclass
