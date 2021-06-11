@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Matsoo</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="description" content="Maaatsoo" />
+    <script src="js/bc.min.js"></script>
+    <script src="js/aframe-master.min.js"></script>
+  </head>
+  <body>
+    <a-scene device-orientation-permission-ui="enabled: false" vr-mode-ui="enabled: false">
+      <a-assets>
+        <video id="video" preload="auto" src="" autoplay muted crossorigin="anonymous" webkit-playsinline playsinline></video>
+      </a-assets>
+      <a-videosphere rotation="0 -90 0" src="#video" visible="true" loop="false">
+      </a-videosphere>
+    </a-scene>
+  </body>
+</html>
