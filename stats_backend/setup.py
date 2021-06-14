@@ -10,7 +10,7 @@ setup(
     zip_safe=False,
     extras_require={},
     tests_require=["pytest"],
-    install_requires=["pyyaml", "bokeh", "flask", "boto3"],
+    install_requires=["bokeh", "flask", "flask-cors", "redis"],
     entry_points={
         "console_scripts": [
             "matsoogo = omnimatsoo.wsgi:start",
