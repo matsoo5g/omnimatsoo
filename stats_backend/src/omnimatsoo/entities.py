@@ -29,6 +29,7 @@ class PlaybackStatistics:
     timestamp: int
     target: str
     events: list[DomEvent]
+    device_tag: str
     playbackquality: PlaybackQualitySample
 
     def __post_init__(self):
