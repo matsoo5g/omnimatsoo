@@ -1,4 +1,5 @@
 from flask import request, jsonify, Response, current_app
+
 from omnimatsoo.handlers import collect_blueprint
 from omnimatsoo.entities import PlaybackStatistics
 from omnimatsoo.services import ServiceClients as SVC
