@@ -28,6 +28,7 @@ class PlaybackStatistics:
     id: str
     timestamp: int
     target: str
+    duration: float
     events: list[DomEvent]
     device_tag: str
     playbackquality: PlaybackQualitySample
@@ -35,4 +36,6 @@ class PlaybackStatistics:
     def __post_init__(self):
         self.playbackquality = PlaybackQualitySample(**self.playbackquality)
         for i, e in enumerate(self.events):
-            self.events[i] = DomEvent.from_tuple(e)
+            self.events[i] = (
+                DomEvent(**e) if isinstance(e, dict) else DomEvent.from_tuple(e)
+            )
