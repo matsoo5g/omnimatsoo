@@ -77,6 +77,7 @@ window.addEventListener("DOMContentLoaded", () => {
           .substring(1),
       timestamp: Date.now(),
       target: video.src,
+      duration: video.duration,
       events: events,
       device_tag: qpvars.deviceTag,
       playbackquality: pqEvents,
