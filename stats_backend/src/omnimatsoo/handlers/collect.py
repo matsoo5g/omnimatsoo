@@ -17,8 +17,3 @@ def _():
             response="bad payload", status=400, content_type="application/json"
         )
     return jsonify("")
-
-
-@collect_blueprint.route("/", methods=["GET"])
-def get_all():
-    return jsonify(SVC.playback_benchmark.list())

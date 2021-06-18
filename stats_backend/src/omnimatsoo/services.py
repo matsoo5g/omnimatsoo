@@ -20,6 +20,10 @@ class PREFIXES(str, Enum):
     AGGREGATION_ACTUAL_PLAYBACK_DURATION_VIDEO_SUM = "AGGRADURATION_VS:"
     AGGREGATION_ACTUAL_PLAYBACK_DURATION_ACTUAL_SUM = "AGGRADURATION_AS:"
 
+    S3 = "S3"
+    CloudFront = "CloudFront"
+    Edge = "Edge"
+
 
 @dataclass
 class RecordKey:
@@ -65,8 +69,87 @@ class PlaybackBenchmark:
             duration=playback_statistics.duration,
         )
 
-    def list(self) -> list:
-        return self.__storage.get("")
+    def list_all(self) -> list:
+        items = self.__storage.get_items()
+        if not items:
+            return items
+        k, v = items.popitem()
+        items[k] = v
+        is_bytes = hasattr(k, "decode")
+
+        if not is_bytes:
+            return items
+        return {k.decode("utf-8"): v.decode("utf-8") for k, v in items.items()}
+
+    def group_by_nodes_playable(self, nodes: list[int]) -> dict[str, float]:
+        return self._fraction_aggretation(
+            fetch_prefix=PREFIXES.AGGREGATION_TIME_BECOME_PLAYABLE_COUNTS[:-3],
+            dividend_prefix=PREFIXES.AGGREGATION_TIME_BECOME_PLAYABLE_SUM[:-1],
+            divisor_prefix=PREFIXES.AGGREGATION_TIME_BECOME_PLAYABLE_COUNTS[:-1],
+            nodes=nodes,
+        )
+
+    def group_by_nodes_playback_duration(self, nodes: list[int]) -> dict[str, float]:
+        return self._fraction_aggretation(
+            fetch_prefix=PREFIXES.AGGREGATION_ACTUAL_PLAYBACK_DURATION_VIDEO_SUM[:-3],
+            dividend_prefix=PREFIXES.AGGREGATION_ACTUAL_PLAYBACK_DURATION_ACTUAL_SUM[
+                :-1
+            ],
+            divisor_prefix=PREFIXES.AGGREGATION_ACTUAL_PLAYBACK_DURATION_VIDEO_SUM[:-1],
+            nodes=nodes,
+        )
+
+    def group_by_nodes_num_events(
+        self, event_name: str, nodes: list[int]
+    ) -> dict[str, int]:
+        if not (
+            pairs := self.__storage.get_items(
+                f"{PREFIXES.AGGREGATION_EVENTS_HISTOGRAM}{event_name}"
+            )
+        ):
+            return {}
+        k, v = pairs.popitem()
+        pairs[k] = v
+        IS_SOURCE_BYTES = hasattr(k, "decode")
+        bucket = {}
+        for k, v in pairs.items():
+            if IS_SOURCE_BYTES:
+                k = k.decode("utf-8")
+            total_nodes = k.split(":")
+            node_key = ":".join(total_nodes[node_idx + 2] for node_idx in nodes)
+            bucket[node_key] = bucket.get(node_key, 0) + int(v)
+        return bucket
+
+    def _fraction_aggretation(
+        self,
+        fetch_prefix: str,
+        dividend_prefix: str,
+        divisor_prefix: str,
+        nodes: list[int],
+    ):
+        if not (pairs := self.__storage.get_items(fetch_prefix)):
+            return {}
+        k, v = pairs.popitem()
+        pairs[k] = v
+        IS_SOURCE_BYTES = hasattr(k, "decode")
+        buckets = {
+            dividend_prefix: {},
+            divisor_prefix: {},
+        }
+
+        for k, v in pairs.items():
+            if IS_SOURCE_BYTES:
+                k = k.decode("utf-8")
+            total_nodes = k.split(":")
+            node_key = ":".join(total_nodes[node_idx + 1] for node_idx in nodes)
+            bucket = buckets.get(total_nodes[0])
+            if bucket is None:
+                raise ValueError(f'Malformed key found: "{k}"')
+            bucket[node_key] = bucket.get(node_key, 0.0) + float(v)
+        return {
+            k: buckets[dividend_prefix][k] / v
+            for k, v in buckets[divisor_prefix].items()
+        }
 
     def _aggr_hist(self, key, playback_events):
         to_update = {}
@@ -110,11 +193,11 @@ class PlaybackBenchmark:
 
     def _get_origin_tag(self, netloc: str) -> str:
         if netloc.endswith("s3.amazonaws.com"):
-            return "S3"
+            return PREFIXES.S3.value
         elif netloc.endswith("cloudfront.net"):
-            return "CloudFront"
+            return PREFIXES.CloudFront.value
         else:
-            return "Edge"
+            return PREFIXES.Edge.value
 
 
 class ServiceClients:
