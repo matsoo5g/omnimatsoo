@@ -13,7 +13,21 @@ class SUPPORTED(Enum):
 
 class Storage(ABC):
     @abstractmethod
-    def get(self, id_prefix_range: Optional[Union[str, bytes]]) -> list[Any]:
+    def get_keys(
+        self, id_prefix_range: Optional[Union[str, bytes]]
+    ) -> list[Union[str, bytes]]:
+        pass
+
+    @abstractmethod
+    def get_values(
+        self, id_prefix_range: Optional[Union[str, bytes]]
+    ) -> list[Union[str, bytes]]:
+        pass
+
+    @abstractmethod
+    def get_items(
+        self, id_prefix_range: Optional[Union[str, bytes]]
+    ) -> dict[Union[str, bytes], Union[str, bytes]]:
         pass
 
     @abstractmethod
@@ -39,10 +53,20 @@ class MemoryBackend(Storage):
     def __init__(self, **kwargs):
         self._storage = {}
 
-    def get(
+    def get_keys(
+        self, id_prefix_range: Optional[Union[str, bytes]] = ""
+    ) -> list[Union[str, bytes]]:
+        return [k for k in self._storage.keys() if k.startswith(id_prefix_range)]
+
+    def get_values(
         self, id_prefix_range: Optional[Union[str, bytes]] = ""
     ) -> list[Union[str, bytes]]:
         return [v for k, v in self._storage.items() if k.startswith(id_prefix_range)]
+
+    def get_items(
+        self, id_prefix_range: Optional[Union[str, bytes]] = ""
+    ) -> dict[Union[str, bytes], Union[str, bytes]]:
+        return {k: v for k, v in self._storage.items() if k.startswith(id_prefix_range)}
 
     def set(self, id: Union[str, bytes], content: Union[str, bytes]) -> bool:
         self._storage[id] = content
@@ -75,15 +99,35 @@ class RedisBackend(Storage):
     def __init__(self, host="redis", port=6379, **kwargs):
         self.redis_client = Redis(host=host, port=port, **kwargs)
 
-    def get(self, id_prefix_range: Union[str, bytes] = "") -> list[Union[str, bytes]]:
-        if v := self.redis_client.get(id_prefix_range):
-            return v
+    def get_keys(
+        self, id_prefix_range: Optional[Union[str, bytes]] = ""
+    ) -> list[Union[str, bytes]]:
+        if self.redis_client.get(id_prefix_range):
+            return [id_prefix_range]
         if not id_prefix_range or id_prefix_range[-1] != "*":
             id_prefix_range += "*"
-        keys = []
-        for found in self.redis_client.scan_iter(match=id_prefix_range, _type="STRING"):
-            keys.append(found)
+        return [
+            found
+            for found in self.redis_client.scan_iter(
+                match=id_prefix_range, _type="STRING"
+            )
+        ]
+
+    def get_values(
+        self, id_prefix_range: Union[str, bytes] = ""
+    ) -> list[Union[str, bytes]]:
+        keys = self.get_keys(id_prefix_range)
+        if len(keys) == 1:
+            return self.redis_client.get(id_prefix_range)
         return self.redis_client.mget(keys=keys)
+
+    def get_items(
+        self, id_prefix_range: Optional[Union[str, bytes]] = ""
+    ) -> dict[Union[str, bytes], Union[str, bytes]]:
+        keys = self.get_keys(id_prefix_range)
+        if len(keys) == 1:
+            return {id_prefix_range: self.redis_client.get(id_prefix_range)}
+        return {k: v for k, v in zip(keys, self.redis_client.mget(keys=keys))}
 
     def set(self, id: Union[str, bytes], content: Union[str, bytes]) -> bool:
         keys = [self.MEMBER_SET_KEY, id]
