@@ -1,0 +1,13 @@
+FROM python:3.9-slim
+
+ENV APP_PORT=5000
+EXPOSE 5000
+# or
+# ENV APP_SOCKET_PATH=/var/run/matsoo.sock
+ADD requirements.txt /tmp/requirements.txt
+RUN ["pip", "install", "--no-cache-dir", "-r", "/tmp/requirements.txt"]
+# COPY stats_backend /tmp/app
+# RUN cd /tmp/app && python setup.py install
+
+# USER nobody
+# ENTRYPOINT ["matsoogo"]

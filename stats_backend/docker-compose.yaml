@@ -1,0 +1,43 @@
+version: "3.7"
+services:
+  web:
+    image: devimg
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command:
+      - /bin/sh
+      - -c
+      - python setup.py develop && flask run --host 0.0.0.0 --port 5000
+    working_dir: /srv/app
+    env_file:
+      - ./.flaskenv
+    volumes:
+      - ./:/srv/app
+    ports:
+      - 5000:5000
+    depends_on:
+      - redis
+  redis:
+    image: redis@sha256:eaaa58f8757d6f04b2e34ace57a71d79f8468053c198f5758fd2068ac235f303
+    command: redis-server --appendonly yes
+    ports:
+      - 6379:6379
+    volumes:
+      - ../vols:/data
+    restart: always
+    environment:
+      - REDIS_REPLICATION_MODE=master
+  ngrok:
+    build:
+      context: .
+      dockerfile: Dockerfile.ngrok
+    image: ngrokimg
+    command:
+      - /bin/sh
+      - -c
+      - "/ngrok http web:5000 --region eu"
+    ports:
+      - 4040:4040
+    depends_on:
+      - web
