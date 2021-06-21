@@ -9,8 +9,8 @@ function prepareStatPayloadFromQueryParameters() {
     2: "/vid/bitmovin_6M_137s_hd.mp4",
     3: "/vid/Dunkerque_2M_276s_fhd.mp4",
     4: "/vid/Klyuchevskoy_10M_147s_4k.mp4",
-    5: "/vid/Dam_20M_24s_6k.mp4",
-    6: "/vid/Dam_10M_24s_6k.webm",
+    5: "/vid/Monkeys_28M_20s_4k.mp4",
+    6: "/vid/Dam_50M_24s_4k.mp4",
   };
   const qparams = Object.fromEntries(
     new URLSearchParams(window.location.search).entries()
